@@ -244,25 +244,25 @@ class map_sort{
 			if(c_matrix[i][b] != -1){
 				vector<long> temp;
 				for(int k=0;k<t_q;k++){
-					printf("C: %i, %d\n",b, (b*t_q)+k);
+					//printf("C: %i, %d\n",b, (b*t_q)+k);
 					if (min == -1){
 						if (array[(b*t_q)+k]<max)
-							//printf("Oooooooooooooooooooooooooooooooook menor\n");
+							printf("Oooooooooooooooooooooooooooooooook menor\n");
 							temp.push_back(array[(b*t_q)+k]);
 					}else if (max == -1){
 						if (min<=array[(b*t_q)+k])
-							//printf("Oooooooooooooooooooooooooooooooook mayor\n");
+							printf("Oooooooooooooooooooooooooooooooook mayor\n");
 							temp.push_back(array[(b*t_q)+k]);
 					}else{
 						if (min<=array[(b*t_q)+k] && array[(b*t_q)+k]<max)
-							//printf("Oooooooooooooooooooooooooooooooook\n");
+							printf("Oooooooooooooooooooooooooooooooook\n");
 							temp.push_back(array[(b*t_q)+k]);
 					}
 				}
 				//printf("Aqui %ld\n", c_matrix[i][b]);
 				long pos = c_matrix[i][b];
 				for (int v=0;v<temp.size();v++){
-					//printf("Soy: %i, Vector pos:%d, dato: %ld\n",i, v, temp[v]);
+					printf("Soy: %i, Vector pos:%d, dato: %ld\n",i, v, temp[v]);
 					
 					o_array[pos+v] = temp[v];
 				}
