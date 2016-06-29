@@ -6,8 +6,12 @@
 #include <mutex>
 #include <ctime>
 #include <algorithm>
+#include <vector>
+#include <climits>
 
 using namespace std;
+
+typedef long* lp;
 
 class c_time{
 	public:
@@ -21,11 +25,14 @@ class c_time{
 
 class node{
 	public:
-	long long dato;
+	lp dato;
 	node * sig;
-	node (long long i){
+	node (lp i){
 		dato = i;
 		sig = NULL;
+	}
+	~node(){
+		delete sig;
 	}
 };
 
@@ -36,7 +43,10 @@ class lista{
 	lista(){
 		raiz = NULL;
 	}
-	void insert(long long d){
+	~lista(){
+		delete raiz;
+	}
+	void insert(lp d){
 		mu.lock();
 		node ** temp = &raiz;
 		while(*temp){
@@ -48,12 +58,13 @@ class lista{
 	void print (){
 		node * temp = raiz;
 		while (temp){
-			cout<<temp->dato<<", ";
+			cout<<"|"<<*(temp->dato);
+			if(temp->sig) cout<<"->";
 			temp = temp->sig;
 		}
 		return;
 	}
-	long count (){
+	long size (){
 		long c = 0;
 		node * temp = raiz;
 		while(temp){
@@ -64,6 +75,7 @@ class lista{
 	}
 };
 
+/*
 class map{
 	public:
 
@@ -105,10 +117,10 @@ class map{
 		}
 		return temp;
 	}
-	long count (){
+	long size (){
 		long c = 0;
 		for(int i = 0;i<n_key;i++){
-			c += keys[i]->count();
+			c += keys[i]->size();
 		}
 		return c;
 	}
@@ -116,6 +128,9 @@ class map{
 		return n_key;
 	}
 };
+*/
+
+typedef pair<long,lista> llis;
 
 class map_sort{
 	public:
@@ -128,8 +143,11 @@ class map_sort{
 	int block;
 	int t_q;
 	long ** c_matrix;
-	long ** q_matrix;
+	//long ** q_matrix;
 	thread * workers;
+	int * t_count;
+	int * a_t_count;
+
 	map_sort (long * _array, int _tam, int _n_key, int _block){
 		array = _array;
 		tam = _tam;
@@ -141,6 +159,10 @@ class map_sort{
 		keys = new long [n_key];
 		int c_i = 0;
 		int t_r = 0;
+		t_count = new int [intervals];
+		a_t_count = new int [intervals];
+		
+		for(int i=0;i<intervals;i++){t_count[i] = 0;}
 		while (c_i != n_key){
 			t_r = rand() % tam;
 			if (!find_k(array[t_r])){
@@ -150,9 +172,9 @@ class map_sort{
 		}
 		cout<<"Llaves creadas correctamente"<<endl;
 		sort(keys, keys + n_key);
-		workers = new thread [n_key];
+		workers = new thread [intervals];
 		c_matrix = init_m(intervals, block,0);
-		q_matrix = init_m(intervals, block,-1);
+		//q_matrix = init_m(intervals, block,-1);
 	}
 	
 	bool find_k (long d){
@@ -171,11 +193,32 @@ class map_sort{
 		}
 		return temp;
 	}
-	
+
+	llis ** init_m_p (int n_i, int n_j, int def){
+		llis ** temp = new llis * [n_i];
+		for (int i=0;i<n_i;i++){
+			temp [i] = new llis [n_j];
+			for(int j=0;j<n_j;j++)
+				temp[i][j].first = def;
+		}
+		return temp;
+	}
+
 	void print_m (long ** a, int n_i, int n_j){
 		for (int i=0;i<n_i;i++){
 			for(int j=0;j<n_j;j++)
-				cout<<a[i][j]<<" ";
+				cout<<a[i][j]<<"\t";
+			cout<<endl;
+		}
+		cout<<endl;
+	}
+	
+	void print_m_p (pair<long,lista> ** a, int n_i, int n_j){
+		for (int i=0;i<n_i;i++){
+			for(int j=0;j<n_j;j++){
+				cout<<a[i][j].first<<", ";
+				a[i][j].second.print();
+			}
 			cout<<endl;
 		}
 		cout<<endl;
@@ -183,12 +226,18 @@ class map_sort{
 	
 	void print_cq (){
 		print_m(c_matrix, intervals, block);
-		print_m(q_matrix, intervals, block);
 	}
 	
 	void print(){
 		for (int i=0;i<tam;i++){
 			cout<<array[i]<<", ";
+		}
+		cout<<endl;
+	}
+
+	void print_o(){
+		for (int i=0;i<tam;i++){
+			cout<<o_array[i]<<", ";
 		}
 		cout<<endl;
 	}
@@ -200,76 +249,101 @@ class map_sort{
 		cout<<endl;
 	}
 	
-	void t_sort (int min, int max, int i, int & count){
-		int count_t = 0;
-		if (min == -1){
-			for(int it=0;it<tam;it++){
-				if (array[it]<max) {
-					c_matrix[i][int(floor(it/t_q))] +=1;
-					count_t++;
-				}
-			}
-		}else if (max == -1){
-			for(int it=0;it<tam;it++){
-				if (min<=array[it]) {
-					c_matrix[i][int(floor(it/t_q))] +=1;
-					count_t++;
-				}
-			}
-		}else{
-			for(int it=0;it<tam;it++){
-				if (min<=array[it] && array[it]<max) {
-					c_matrix[i][int(floor(it/t_q))] +=1;
-					count_t++;
-				}
+	void t_sort (long min, long max, int i){
+		for(int it=0;it<tam;it++){
+			if (min<=array[it] && array[it]<max) {
+				c_matrix[i][int(floor(it/t_q))] +=1;
+				t_count[i]++;
 			}
 		}
-		count=count_t;
 	}
 	
-	void m_sort (){
-		int t_count [intervals];
-		t_sort(-1,keys[0],0,t_count[0]);
-		for (int i=1;i<n_key;i++){
-			t_sort(keys[i-1],keys[i],i,t_count[i]);
+	void t_quick(long min, long max, int i){
+		for(int b=0; b<block ;b++){
+			if(c_matrix[i][b] != -1){
+				long pos = 0;
+				for(int k=0;k<t_q;k++){
+					long p_t = (b*t_q)+k;
+					if (min<=array[p_t] && array[p_t]<max) {
+						o_array[c_matrix[i][b]+pos] = array[p_t];
+						pos++;
+					}
+				}
+			}
 		}
-		t_sort(keys[n_key-1],-1,n_key,t_count[n_key]);
+		long max_i = (i==intervals-1)? tam:a_t_count[i+1];
+		sort (o_array+a_t_count[i],o_array+max_i);
+	}
+
+	
+	void m_sort (){
+		long temp,min,max;
+		
+		for (int i=0;i<intervals;i++){
+			min = (i==0)? LONG_MIN: keys[i-1];
+			max = (i==n_key)? LONG_MAX: keys[i];
+			workers[i] = thread(&map_sort::t_sort,this,min,max,i);
+		}
+		for (int i=0;i<intervals;i++)
+			workers[i].join();
+		
 		int q_count = 0;
+		int c_t = 0;
 		for(int i=0;i<intervals;i++){
 			for(int j=0;j<block;j++){
+				temp = c_matrix[i][j];
 				if (c_matrix[i][j]!=0)
-					q_matrix[i][j] = q_count;
-				q_count += c_matrix[i][j];
+					c_matrix[i][j] = q_count;
+				else c_matrix[i][j] = -1;
+				q_count += temp;
 			}
-			cout<<"T: "<<t_count[i]<<endl;
+			c_t += t_count[i];
 		}
+
+		a_t_count [0] = 0;
+		for(int i=1;i<intervals;i++)
+			a_t_count[i] = a_t_count[i-1]+t_count[i-1];
+
+		for (int i=0;i<intervals;i++){
+			min = (i==0)? LONG_MIN: keys[i-1];
+			max = (i==n_key)? LONG_MAX: keys[i];
+			workers[i] = thread(&map_sort::t_quick,this,min,max,i);
+		}
+		for (int i=0;i<intervals;i++)
+			workers[i].join();
+		printf("Se Ordenaron %d Numeros\n",q_count);
 	}
 	
 };
 
+/*
 void t_insert (long long d, map m){
 	m.insert(d);
-}
+}*/
 
 int main (){
 	srand(std::time(0));
 	c_time t;
-	long tam = 16;
-	int  max = 100;
+	long tam = 100000000;
+	int  max = 10000000;
 	long * array = new long [tam];
-	//int  n_thread = 10;//thread::hardware_concurrency();
-	int n_keys=7;
-	int block =4;
-	map m(n_keys);
+	//long array [] = {10,6,14,1,13,9,5,11,3,7,16,2,12,8,15,4};
+	//int  n_thread = 4;//thread::hardware_concurrency();
+	int n_keys=19;
+	int block =100;
+	//map m(n_keys);
 	for (int i = 0;i<tam;i++)
 		array[i] = rand()%max;
 
 	map_sort map (array, tam, n_keys, block);
+	t.init();
 	map.m_sort();
-	map.print();
-	map.print_k();
-	map.print_cq();
-
+	t.stop();
+	t.print();
+	//map.print();
+	//map.print_k();
+	//map.print_cq();
+	//map.print_o();
 /*
 	t.init();//Init Time
 	thread workers [n_thread];
