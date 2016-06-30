@@ -8,6 +8,12 @@
 #include <algorithm>
 #include <vector>
 #include <climits>
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <pthread.h>
+#include <assert.h>
+
 
 using namespace std;
 
@@ -282,10 +288,10 @@ class map_sort{
 		for (int i=0;i<intervals;i++){
 			min = (i==0)? LONG_MIN: keys[i-1];
 			max = (i==n_key)? LONG_MAX: keys[i];
-			workers[i] = thread(&map_sort::t_sort,this,min,max,i);
+			t_sort(min,max,i);
 		}
-		for (int i=0;i<intervals;i++)
-			workers[i].join();
+		//for (int i=0;i<intervals;i++)
+		//	workers[i].join();
 		
 		int q_count = 0;
 		int c_t = 0;
@@ -307,10 +313,10 @@ class map_sort{
 		for (int i=0;i<intervals;i++){
 			min = (i==0)? LONG_MIN: keys[i-1];
 			max = (i==n_key)? LONG_MAX: keys[i];
-			workers[i] = thread(&map_sort::t_quick,this,min,max,i);
+			t_quick(min,max,i);
 		}
-		for (int i=0;i<intervals;i++)
-			workers[i].join();
+		//for (int i=0;i<intervals;i++)
+		//	workers[i].join();
 		printf("Se Ordenaron %d Numeros\n",q_count);
 	}
 	
@@ -324,7 +330,7 @@ void t_insert (long long d, map m){
 int main (){
 	struct timespec begin, end;
 	double elapsed;
-
+	
 	srand(std::time(0));
 	c_time t;
 	long tam = 10000;
@@ -340,7 +346,7 @@ int main (){
 
 	map_sort map (array, tam, n_keys, block);
 	t.init();
-
+	
 	clock_gettime(CLOCK_MONOTONIC, &begin);
 
 	map.m_sort();
@@ -351,7 +357,7 @@ int main (){
 	elapsed += (end.tv_nsec - begin.tv_nsec) / 1000000000.0;
 	
 	cout<<"Tiempo hebras: "<<elapsed<<endl;
-
+	
 	t.stop();
 	t.print();
 	//map.print();
